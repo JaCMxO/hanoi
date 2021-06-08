@@ -1,7 +1,7 @@
 /**
  * @file hanoi.c
  * 
- * Hanoi towers solution algorith
+ * @brief Hanoi towers solution algorithm
  * 
  * @author Jaime Camacho
  * Contact: jaime.albertogdl@gmail.com
@@ -12,6 +12,6 @@
 
 int main()
 {
-	
+
 	return 0;
 }
