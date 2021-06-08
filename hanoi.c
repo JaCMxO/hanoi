@@ -33,7 +33,7 @@ int hanoi(int n, int source, int target){
 		int auxiliary = 6 - (source + target);
 		hanoi(n-1, source, target);
 		pMove(source, target);
-		hanoi(auxiliary, target);
+		hanoi(n-1, auxiliary, target);
 	}
 }
 
