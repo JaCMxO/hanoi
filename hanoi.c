@@ -38,5 +38,5 @@ int hanoi(int n, int source, int target){
 }
 
 void pMove(int source, int target){
-	printf("%d -> %d", source, target);
+	printf("%d -> %d\n", source, target);
 }
