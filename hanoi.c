@@ -17,26 +17,21 @@ int B[N] = {0};
 int C[N] = {0};
 
 
-int hanoi(int n, int source, int target);
-void pMove(int source, int target);
+int hanoi(int n, int source, int target, int aux);
 
 int main()
 {
-	hanoi(N, 1, N);
+	hanoi(N, 1, 3, 2);
 	return 0;
 }
 
-int hanoi(int n, int source, int target){
+int hanoi(int n, int source, int target, int aux){
+	int auxiliary;
 	if(n == 1){		//base case
-		pMove(source, target);
+		printf("%d -> %d\n", source, target);
 	}else{
-		int auxiliary = 6 - (source + target);
-		hanoi(n-1, source, target);
-		pMove(source, target);
-		hanoi(n-1, auxiliary, target);
+		hanoi(n-1, source, aux, target);
+		printf("%d -> %d\n", source, target);
+		hanoi(n-1, aux, target, source);
 	}
-}
-
-void pMove(int source, int target){
-	printf("%d -> %d\n", source, target);
 }
