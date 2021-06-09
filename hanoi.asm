@@ -38,12 +38,20 @@ initCycle:
 
 hanoi:
 	### Manejo del stack PUSH ###
-	addi	$sp, $sp, -4			#decrement sp to store a word in stack
-	sw		$ra, ($sp)				#save return direction in stack
+	addi	$sp, $sp, -20			#decrement sp to store a word in stack
+	sw		$ra, 0($sp)				#save return direction in stack
+	sw		$a0, 4($sp)				#save a0 in stack
+	sw		$a1, 8($sp)				#save a1 in stack
+	sw		$a2, 12($sp)			#save a2 in stack	
+	sw		$a3, 16($sp)			#save a3 in stack	
 	
 	### if(a0 == 1) ###
 	addi	$at, $zero, 1			#save comparison value
-	beq		$a0, $at, moveDisc		#a0 == 1 ? jump:continue
+	bne		$a0, $at, continue		#a0 != 1 ? jump:continue
+	jal 	moveDisc				#call moveDisc routine
+	jr		$ra						#return
+	
+continue:
 	### else ###
 	#define the new arguments before making recursive call
 	addi	$a0, $a0, -1			#decrement number of discs
@@ -53,37 +61,38 @@ hanoi:
 	jal		hanoi					#make recursive call hanoi
 	jal		moveDisc				#call moveDisc routine
 	addi	$a0, $a0, -1			#decrement number of discs
-	add 	$at, $zero, $a0			#save to temp a0
-	add		$a0, $zero, $a3			#save to a0 a3
+	add 	$at, $zero, $a1			#save to temp a1
+	add		$a1, $zero, $a3			#save to a1 a3
 	add		$a3, $zero, $at			#save to a3 temp
 	jal		hanoi					#make recursive call hanoi
 	j		hanoi_return			#return routine hanoi
 
 moveDisc:
-	add		$s6, $zero, $a0			#save a0 (source) as argument
+	add		$s6, $zero, $a1			#save a1 (source) as argument
 	jal		decodeTower				#call decodeTower routine
 	add		$s7, $s1, $v0			#get source tower direction
-	add		$s6, $zero, $a1			#save a1 (target) as argument
+	add		$s6, $zero, $a2			#save a2 (target) as argument
 	jal		decodeTower				#call decodeTower routine
-	add 	$s6, $zero, $s1			#get base towers direction
-	add		$s6, $s6, $v0			#get target tower direction
+	add		$s6, $s1, $v0			#get target tower direction
 	add		$s6, $s6, $s5			#point to base tower direction
 
 forMovDiscS:
 	lw		$t0, ($s7)				#get first number of source tower
-	beq		$t0, $zero, repeatFor	#t0 == 0 ? jump:continue
+	beq		$t0, $zero, repeatForEx	#t0 == 0 ? jump:continue
 	add		$at, $zero, $t0			#get top number from source tower
 	sw		$zero, ($s7)			#make top number from source tower zero
-	#j		repeatFor				#repeat for cycle
 
 forMovDiscT:
 	lw		$t1, ($s6)				#get first number of  base target tower
-	bne		$t1, $zero, repeatFor	#t1 != 0 jump:continue
+	bne		$t1, $zero, repeatForIn	#t1 != 0 jump:continue
 	sw		$at, ($s6)				#save temp value in the new tower
-	jr		$ra						#return
+	jr 		$ra						#return
 
-repeatFor:
+repeatForIn:
 	addi	$s6, $s6, -0x20			#point to next value
+	j		forMovDiscT				#repeat for cycle
+	
+repeatForEx:
 	addi 	$s7, $s7, 0x20			#point to next value
 	j		forMovDiscS				#repeat for cycle
 
@@ -96,8 +105,12 @@ decodeTower:
 	
 hanoi_return:
 	### Manejo del stack POP ###
-	lw 		$ra, ($sp)				#recover return value from stack
-	addi	$sp, $sp, 4				#return sp to original position
+	lw 		$ra, 0($sp)				#recover return value from stack
+	lw		$a0, 4($sp)				#recover a0 from stack
+	lw		$a1, 8($sp)				#recover a0 from stack
+	lw		$a2, 12($sp)			#recover a0 from stack
+	lw		$a3, 16($sp)			#recover a0 from stack
+	addi	$sp, $sp, 20			#return sp to original position
 	
 return:
 	jr		$ra						#return
