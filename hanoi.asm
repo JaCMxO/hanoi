@@ -37,7 +37,7 @@ initCycle:
 	j		initCycle				#repeat cycle
 
 hanoi:
-	### Manejo del stack PUSH ###
+	### PUSH stack ###
 	addi	$sp, $sp, -20			#decrement sp to store a word in stack
 	sw		$ra, 0($sp)				#save return direction in stack
 	sw		$a0, 4($sp)				#save a0 in stack
@@ -100,7 +100,7 @@ forMovDiscT:
 	sw		$at, ($s6)				#save temp value in the new tower
 
 	lw		$ra, ($sp)				#recover ra before returning
-	addi, 	$sp, $sp, 4				#move sp to original position
+	addi 	$sp, $sp, 4				#move sp to original position
 	jr 		$ra						#return
 
 repeatForIn:
@@ -112,18 +112,24 @@ repeatForEx:
 	j		forMovDiscS				#repeat for cycle
 
 decodeTower:
+case1:
 	addi	$at, $zero, 1			#save comparison value
-	beq		$s6, $at, returnDeco	#s6 == 1 ? jump:continue
-	addi	$at, $zero, 1			#set temp to 1
-	sllv	$v0, $at, $s6			#shift to get tower offset
+	bne 	$s6, $at, case2			#s6 != 1 ? jump:continue
+	add		$v0, $zero, $zero		#set return value
+	jr		$ra						#return
+	
+case2:
+	addi	$at, $zero, 2			#save comparison value
+	bne 	$s6, $at, case3			#s6 != 1 ? jump:continue
+	addi	$v0, $zero, 4			#set return value
 	jr		$ra						#return
 
-returnDeco:
-	add		$v0, $zero, $zero
-	jr 		$ra
+case3:
+	addi	$v0, $zero, 8			#set return value
+	jr		$ra						#return
 
 hanoi_return:
-	### Manejo del stack POP ###
+	### POP stack ###
 	lw 		$ra, 0($sp)				#recover return value from stack
 	lw		$a0, 4($sp)				#recover a0 from stack
 	lw		$a1, 8($sp)				#recover a0 from stack
