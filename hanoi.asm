@@ -6,7 +6,7 @@
 
 .text			#programm code
 main:
-	addi	$s0, $zero, 3			#set number of discs
+	addi	$s0, $zero, 8			#set number of discs
 	lui		$s1, 0x1001				#load start direction of tower A
 	addi 	$s2, $s1, 4				#load start direction of tower B
 	addi 	$s3, $s1, 8				#load start direction of tower C
@@ -49,7 +49,7 @@ hanoi:
 	addi	$at, $zero, 1			#save comparison value
 	bne		$a0, $at, continue		#a0 != 1 ? jump:continue
 	jal 	moveDisc				#call moveDisc routine
-	jr		$ra						#return
+	j		hanoi_return			#return
 	
 continue:
 	### else ###
@@ -59,15 +59,27 @@ continue:
 	add		$a2, $zero, $a3			#save to a2 a3
 	add		$a3, $zero, $at			#save to a3 temp
 	jal		hanoi					#make recursive call hanoi
+	
+	add 	$at, $zero, $a2			#save to temp a2
+	add		$a2, $zero, $a3			#save to a2 a3
+	add		$a3, $zero, $at			#save to a3 temp 
+	
 	jal		moveDisc				#call moveDisc routine
-	addi	$a0, $a0, -1			#decrement number of discs
 	add 	$at, $zero, $a1			#save to temp a1
 	add		$a1, $zero, $a3			#save to a1 a3
 	add		$a3, $zero, $at			#save to a3 temp
 	jal		hanoi					#make recursive call hanoi
+	
+	add 	$at, $zero, $a1			#save to temp a1
+	add		$a1, $zero, $a3			#save to a1 a3
+	add		$a3, $zero, $at			#save to a3 temp 
+	
 	j		hanoi_return			#return routine hanoi
 
 moveDisc:
+	addi	$sp, $sp, -4			#move sp
+	sw		$ra, ($sp)				#save ra to call another function
+	
 	add		$s6, $zero, $a1			#save a1 (source) as argument
 	jal		decodeTower				#call decodeTower routine
 	add		$s7, $s1, $v0			#get source tower direction
@@ -86,6 +98,9 @@ forMovDiscT:
 	lw		$t1, ($s6)				#get first number of  base target tower
 	bne		$t1, $zero, repeatForIn	#t1 != 0 jump:continue
 	sw		$at, ($s6)				#save temp value in the new tower
+
+	lw		$ra, ($sp)				#recover ra before returning
+	addi, 	$sp, $sp, 4				#move sp to original position
 	jr 		$ra						#return
 
 repeatForIn:
@@ -98,11 +113,15 @@ repeatForEx:
 
 decodeTower:
 	addi	$at, $zero, 1			#save comparison value
-	beq		$s6, $at, return		#s6 == 1 ? jump:continue
+	beq		$s6, $at, returnDeco	#s6 == 1 ? jump:continue
 	addi	$at, $zero, 1			#set temp to 1
 	sllv	$v0, $at, $s6			#shift to get tower offset
 	jr		$ra						#return
-	
+
+returnDeco:
+	add		$v0, $zero, $zero
+	jr 		$ra
+
 hanoi_return:
 	### Manejo del stack POP ###
 	lw 		$ra, 0($sp)				#recover return value from stack
