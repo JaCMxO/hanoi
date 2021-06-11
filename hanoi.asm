@@ -6,14 +6,24 @@
 
 .text			#programm code
 main:
-	addi	$s0, $zero, 8			#set number of discs
+	addi	$s0, $zero, 4			#set number of discs
 	lui		$s1, 0x1001				#load start direction of tower A
+	
+	lui		$s7, 0x1001				#tower A pointer
+	addi	$s6, $s7, 4				#tower B pointer
+	addi	$s5, $s7, 8				#tower C pointer
+	
+	
 	add		$a0, $zero, $s0			#pass disc number as argument
 	add		$a1, $zero, $s1			#pass start direction of tower A pointer
 	jal		initHanoi				#call initHanoi routine
-	addi	$a1, $a1, -0x20			#get base tower direction
+	#addi	$a1, $a1, -0x20			#get base tower direction
 	add		$s4, $zero, $a1			#save  base tower direction
 	andi	$s4, $s4, 0xffff		#keep lower part of base tower direction
+	
+	add		$s6, $s6, $s4			#tower B base pointer
+	add		$s5, $s5, $s4			#tower C base pointer
+	
 	add		$a0, $zero, $s0			#pass disc number as argument
 	addi	$a1, $zero, 1			#pass source number as argument
 	addi	$a2, $zero, 3			#pass target number as argument
@@ -78,62 +88,6 @@ continue:
 	add		$a1, $zero, $a3			#save to a1 a3
 	add		$a3, $zero, $at			#save to a3 temp 
 
-	j		hanoi_return			#return routine hanoi
-
-moveDisc:
-	### PUSH stack ###
-	addi	$sp, $sp, -4			#move sp
-	sw		$ra, ($sp)				#save ra to call another function
-
-	add		$s6, $zero, $a1			#save a1 (source) as argument
-	jal		decodeTower				#call decodeTower routine
-	add		$s7, $s1, $v0			#get source tower direction
-	add		$s6, $zero, $a2			#save a2 (target) as argument
-	jal		decodeTower				#call decodeTower routine
-	add		$s6, $s1, $v0			#get target tower direction
-	add		$s6, $s6, $s4			#point to base tower direction
-
-forMovDiscS:
-	lw		$t0, ($s7)				#get first number of source tower
-	beq		$t0, $zero, repeatForEx	#t0 == 0 ? jump:continue
-	add		$at, $zero, $t0			#get top number from source tower
-	sw		$zero, ($s7)			#make top number from source tower zero
-
-forMovDiscT:
-	lw		$t1, ($s6)				#get first number of  base target tower
-	bne		$t1, $zero, repeatForIn	#t1 != 0 jump:continue
-	sw		$at, ($s6)				#save temp value in the new tower
-
-	### POP stack ###
-	lw		$ra, ($sp)				#recover ra before returning
-	addi	$sp, $sp, 4				#move sp to original position
-	jr		$ra						#return
-
-repeatForIn:
-	addi	$s6, $s6, -0x20			#point to next value
-	j		forMovDiscT				#repeat for cycle
-
-repeatForEx:
-	addi	$s7, $s7, 0x20			#point to next value
-	j		forMovDiscS				#repeat for cycle
-
-decodeTower:
-case1:
-	addi	$at, $zero, 1			#save comparison value
-	bne		$s6, $at, case2			#s6 != 1 ? jump:continue
-	add		$v0, $zero, $zero		#set return value
-	jr		$ra						#return
-
-case2:
-	addi	$at, $zero, 2			#save comparison value
-	bne		$s6, $at, case3			#s6 != 1 ? jump:continue
-	addi	$v0, $zero, 4			#set return value
-	jr		$ra						#return
-
-case3:
-	addi	$v0, $zero, 8			#set return value
-	jr		$ra						#return
-
 hanoi_return:
 	### POP stack ###
 	lw		$ra, 0($sp)				#recover return value from stack
@@ -142,6 +96,84 @@ hanoi_return:
 	lw		$a2, 12($sp)			#recover a2 from stack
 	lw		$a3, 16($sp)			#recover a3 from stack
 	addi	$sp, $sp, 20			#return sp to original position
+	jr		$ra
+
+moveDisc:
+#s7 -> tower A pointer
+#s6 -> tower B pointer
+#s5 -> tower C pointer
+
+# en un principio, el apuntador A está hasta arriba
+# en un principio, el apuntador B está hasta abajo en la torre B
+# en un principio, el apuntador C está hasta abajo en la torre C
+
+# cada que se usa un apuntador se debe quedar en la posición actual para después poderse moverse
+
+
+casef1:
+	addi	$at, $zero, 1			#save comparison value
+	bne		$a1, $at, casef2		#a1 != 1 ? jump:continue
+	j		movfA					#call movfA routine
+
+casef2:
+	addi	$at, $zero, 2			#save comparison value
+	bne		$a1, $at, movfC			#a1 != 1 ? movfC:continue
+	j		movfB					#call movfB routine
+	
+movfA:
+	lw		$t0, ($s7)				#get first number of source tower
+	sw		$zero, ($s7)			#make top number from source tower zero
+	
+	addi	$s2, $s4, -0x20			#tower base offset
+	add		$s3, $zero, $s7			#pass to s3 the pointer to A
+	andi	$s3, $s3, 0xffff		#get low part
+	sub		$s3, $s3, $s2			#compare if is base
+	beq		$s3, $zero, caset1		#if is base, no need to move pointer
+	
+	addi	$s7, $s7, 0x20			#point to next number
+	j		caset1					#move to tower
+
+movfB:
+	lw		$t0, ($s6)				#get first number of source tower
+	sw		$zero, ($s6)			#make top number from source tower zero
+	addi	$s6, $s6, 0x20			#point to next number
+	j		caset1					#move to tower
+
+movfC:
+	lw		$t0, ($s5)				#get first number of source tower
+	sw		$zero, ($s5)			#make top number from source tower zero
+	addi	$s5, $s5, 0x20			#point to next number
+	
+caset1:
+	addi	$at, $zero, 1			#save comparison value
+	bne		$a2, $at, caset2		#a1 != 1 ? jump:continue
+	j		movtA					#call movtA routine
+
+caset2:
+	addi	$at, $zero, 2			#save comparison value
+	bne		$a2, $at, movtC			#a1 != 1 ? movtC:continue
+	j		movtB					#call movtB routine
+
+movtA:
+	addi	$s2, $s4, -0x20			#tower base offset
+	add		$s3, $zero, $s7			#pass to s3 the pointer to A
+	andi	$s3, $s3, 0xffff		#get low part
+	sub		$s3, $s3, $s2			#compare if is base
+	beq		$s3, $zero, stoAval		#if is base, no need to move pointer
+
+	addi	$s7, $s7, 0x20			#point to next number
+stoAval:
+	sw		$t0, ($s7)				#store the value in target tower
+	j		return					#return
+
+movtB:
+	addi	$s6, $s6, -0x20			#point to next number 
+	sw		$t0, ($s6)				#store the value in target tower
+	j		return					#return
+
+movtC:
+	addi	$s5, $s5, -0x20			#point to next number 
+	sw		$t0, ($s5)				#store the value in target tower
 
 return:
 	jr		$ra						#return
